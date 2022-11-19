@@ -83,6 +83,8 @@ void init_cluster(struct cluster_t *c, int cap)
     assert(cap >= 0);
 
     // TODO
+    c->capacity = cap;
+
 
 }
 
@@ -92,6 +94,8 @@ void init_cluster(struct cluster_t *c, int cap)
 void clear_cluster(struct cluster_t *c)
 {
     // TODO
+    c->capacity=0;
+    c->size=0;
 }
 
 /// Chunk of cluster objects. Value recommended for reallocation.
