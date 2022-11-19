@@ -44,9 +44,11 @@
  *
  * TYTO DEKLARACE NEMENTE
  *
- *   struct obj_t - struktura objektu: identifikator a souradnice
- *   struct cluster_t - shluk objektu:
- *      pocet objektu ve shluku,
+ *   struct obj_t - struktura objektu:
+ *       identifikator a souradnice
+ * 
+ *   struct cluster_t - shluk objektů:
+ *      pocet objektů ve shluku,
  *      kapacita shluku (pocet objektu, pro ktere je rezervovano
  *          misto v poli),
  *      ukazatel na pole shluku.
