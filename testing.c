@@ -17,11 +17,20 @@ struct cluster_t {
 void init_cluster(struct cluster_t *c, int cap){
     // TODO
 }
+
+void vytvorit(){
+
+}
 int main () {
     struct cluster_t *clusters;
+    clusters[0].size=10;
+    clusters[0].capacity=100;
+    clusters[0].obj->id=1;
+    clusters[0].obj->x=10;
+    clusters[0].obj->y=20;
 
-
-
+printf("%d %d %d %f %f",clusters[0].size,clusters[0].capacity,
+        clusters[0].obj->id,clusters[0].obj->x,clusters[0].obj->y);
 
     struct obj_t obj1;
     struct cluster_t clust1;

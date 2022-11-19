@@ -4,4 +4,6 @@ git add <asd>
 git commnit -a -m 'komentar'
 
 eval "$(ssh-agent -s)"
+cd
 ssh-add SSH-Keys/Github
+cd "/mnt/c/Users/Marek Bis/Desktop/IZP/projekt2"
