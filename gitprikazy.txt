@@ -1,0 +1,4 @@
+git push
+git pull
+git add <asd>
+git commnit -a -m 'komentar'
