@@ -7,3 +7,5 @@ eval "$(ssh-agent -s)"
 cd
 ssh-add SSH-Keys/Github
 cd "/mnt/c/Users/Marek Bis/Desktop/IZP/projekt2"
+
+cd "/mnt/c/Users/marek/Desktop/IZP/Projekt2"
