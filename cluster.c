@@ -170,6 +170,11 @@ void merge_clusters(struct cluster_t *c1, struct cluster_t *c2)
     assert(c2 != NULL);
 
     // TODO
+    //Pokud capacita nestaci, zvetsime prostor c1
+    for (int i = 0; i<c2->size;i++){
+        append_cluster(c1,c2->obj[i]);
+    }
+    sort_cluster(c1);
 }
 
 /**********************************************************************/
@@ -186,6 +191,13 @@ int remove_cluster(struct cluster_t *carr, int narr, int idx)
     assert(narr > 0);
 
     // TODO
+    clear_cluster(&carr[idx]);
+    for (int i = idx;i < narr - 1 ;i++){
+        carr[i] = carr[i+1];
+    }
+    carr->size-=1;
+    return carr->size;
+
 }
 
 /*
@@ -220,6 +232,11 @@ float cluster_distance(struct cluster_t *c1, struct cluster_t *c2)
     assert(c2->size > 0);
 
     // TODO
+    int distance;
+    int biggerSize;
+    if (c1->size < c2->size){
+    }
+    for (int i = 0;i<0;i++);
 }
 
 /*
@@ -274,6 +291,7 @@ void print_cluster(struct cluster_t *c)
  jej do pole shluku. Alokuje prostor pro pole vsech shluku a ukazatel na prvni
  polozku pole (ukalazatel na prvni shluk v alokovanem poli) ulozi do pameti,
  kam se odkazuje parametr 'arr'. Funkce vraci pocet nactenych objektu (shluku).
+
  V pripade nejake chyby uklada do pameti, kam se odkazuje 'arr', hodnotu NULL.
 */
 int load_clusters(char *filename, struct cluster_t **arr)
@@ -286,7 +304,7 @@ int load_clusters(char *filename, struct cluster_t **arr)
     FILE *filePtr;
     filePtr = fopen(filename,"r");
     if (filePtr == NULL){
-        fprintf(stderr,"Error while trying to open a file.");
+        fprintf(stderr,"Error while trying to open a file.\n");
         return 0;
     }
     struct obj_t object;
@@ -326,9 +344,20 @@ void print_clusters(struct cluster_t *carr, int narr)
 int main(int argc, char *argv[])
 {
     struct cluster_t *clusters;
-    print_clusters(clusters,load_clusters("objekty.txt",&clusters));
-    for (int i = 0;i<20;i++){
-        clear_cluster(&clusters[i]);
+    int numberOfClusters;
+
+    if (argc == 3){
+        numberOfClusters = atoi(argv[2]);
+        print_clusters(clusters,load_clusters(argv[1],&clusters));
+        for (int i = 0;i<20;i++){
+            clear_cluster(&clusters[i]);
+        }
+        printf("%d", numberOfClusters);
+        free(clusters);
+
+    }else if (argc == 2){
+        numberOfClusters == 1;
+    }else{
+        fprintf(stderr,"Error, invalid number of arguments.\n");
     }
-    free(clusters);
 }
