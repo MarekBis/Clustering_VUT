@@ -85,14 +85,6 @@ void init_cluster(struct cluster_t *c, int cap)
     assert(cap >= 0);
 
     // TODO
-    size_t size = sizeof(float) + sizeof(float) + (sizeof(int));
-    c->obj=malloc(cap* sizeof(*c->obj));
-    if (c->obj == NULL){
-        printf("error\n");
-    }
-    c->capacity = cap;
-    c->size = cap;
-
 
 
 }
@@ -103,6 +95,8 @@ void init_cluster(struct cluster_t *c, int cap)
 void clear_cluster(struct cluster_t *c)
 {
     // TODO
+    c->capacity=0;
+    c->size=0;
 }
 
 /// Chunk of cluster objects. Value recommended for reallocation.
