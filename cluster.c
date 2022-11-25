@@ -85,8 +85,13 @@ void init_cluster(struct cluster_t *c, int cap)
     assert(cap >= 0);
 
     // TODO
-
-
+    c->obj = malloc(sizeof(struct obj_t)*cap);
+    if (c->obj == NULL){
+        fprintf(stderr,"Malloc c->obj error.\n");
+    }else{
+        c->capacity = cap;
+    }
+    c->size = 0;
 }
 
 /*
@@ -95,8 +100,14 @@ void init_cluster(struct cluster_t *c, int cap)
 void clear_cluster(struct cluster_t *c)
 {
     // TODO
-    c->capacity=0;
-    c->size=0;
+    if (c->obj == NULL){
+        return;
+    }else{
+        free(c->obj);
+        c->obj = NULL;
+        c->size = 0;
+        c->capacity = 0;
+    }
 }
 
 /// Chunk of cluster objects. Value recommended for reallocation.
@@ -133,6 +144,14 @@ struct cluster_t *resize_cluster(struct cluster_t *c, int new_cap)
 void append_cluster(struct cluster_t *c, struct obj_t obj)
 {
     // TODO
+    if (c->size == c->capacity){ //SIZE = CAP = není místo, reallocuj
+        resize_cluster(c,c->size + CLUSTER_CHUNK);
+        c->obj[c->size] = obj;
+        c->size++;
+    }else{ // SIZE < CAP = je místo, můžeš přidat obj na konec bez realloc
+        c->obj[c->size] = obj;
+        c->size++;
+    }
 }
 
 /*
@@ -178,6 +197,16 @@ float obj_distance(struct obj_t *o1, struct obj_t *o2)
     assert(o2 != NULL);
 
     // TODO
+    float distance;
+
+    float aX = o1->x;
+    float aY = o1->y;
+
+    float bX = o2->x;
+    float bY = o2->y;
+
+    distance = sqrtf((((bX - aX) * (bX - aX)) + ((bY - aY) * (bY - aY))));
+    return distance;
 }
 
 /*
@@ -252,6 +281,32 @@ int load_clusters(char *filename, struct cluster_t **arr)
     assert(arr != NULL);
 
     // TODO
+
+    //Otevreni a kontrola souboru
+    FILE *filePtr;
+    filePtr = fopen(filename,"r");
+    if (filePtr == NULL){
+        fprintf(stderr,"Error while trying to open a file.");
+        return 0;
+    }
+    struct obj_t object;
+    char countText[7];
+    int countNumber;
+
+    //nacteni prvniho radku kvuli "countNumber"
+    fscanf(filePtr,"%6s%d", countText,&countNumber);
+
+    //alokace místa pro všechny objekty
+    *arr = malloc(sizeof(struct cluster_t) * countNumber);
+
+    for (int i = 0; i<countNumber;i++){
+        fscanf(filePtr,"%d %f %f",&object.id,&object.x,&object.y);
+        init_cluster(&(*arr)[i],1);
+        append_cluster(&(*arr)[i],object);
+    }
+    fclose(filePtr);
+    return countNumber;
+
 }
 
 /*
@@ -271,6 +326,9 @@ void print_clusters(struct cluster_t *carr, int narr)
 int main(int argc, char *argv[])
 {
     struct cluster_t *clusters;
-
-    // TODO
+    print_clusters(clusters,load_clusters("objekty.txt",&clusters));
+    for (int i = 0;i<20;i++){
+        clear_cluster(&clusters[i]);
+    }
+    free(clusters);
 }
