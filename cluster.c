@@ -84,7 +84,6 @@ void init_cluster(struct cluster_t *c, int cap)
     assert(c != NULL);
     assert(cap >= 0);
 
-    // TODO
     c->obj = malloc(sizeof(struct obj_t)*cap);
     if (c->obj == NULL){
         fprintf(stderr,"Malloc c->obj error.\n");
@@ -99,7 +98,6 @@ void init_cluster(struct cluster_t *c, int cap)
  */
 void clear_cluster(struct cluster_t *c)
 {
-    // TODO
     if (c->obj == NULL){
         return;
     }else{
@@ -143,7 +141,6 @@ struct cluster_t *resize_cluster(struct cluster_t *c, int new_cap)
  */
 void append_cluster(struct cluster_t *c, struct obj_t obj)
 {
-    // TODO
     if (c->size == c->capacity){ //SIZE = CAP = není místo, reallocuj
         resize_cluster(c,c->size + CLUSTER_CHUNK);
         c->obj[c->size] = obj;
@@ -169,8 +166,7 @@ void merge_clusters(struct cluster_t *c1, struct cluster_t *c2)
     assert(c1 != NULL);
     assert(c2 != NULL);
 
-    // TODO
-    //Pokud capacita nestaci, zvetsime prostor c1
+    //Pokud kapacita nestaci, zvetsime prostor c1
     for (int i = 0; i<c2->size;i++){
         append_cluster(c1,c2->obj[i]);
     }
@@ -190,7 +186,6 @@ int remove_cluster(struct cluster_t *carr, int narr, int idx)
     assert(idx < narr);
     assert(narr > 0);
 
-    // TODO
     clear_cluster(&carr[idx]);
     for (int i = idx;i < narr - 1 ;i++){
         carr[i] = carr[i+1];
@@ -208,7 +203,6 @@ float obj_distance(struct obj_t *o1, struct obj_t *o2)
     assert(o1 != NULL);
     assert(o2 != NULL);
 
-    // TODO
     float distance;
 
     float aX = o1->x;
@@ -231,18 +225,21 @@ float cluster_distance(struct cluster_t *c1, struct cluster_t *c2)
     assert(c2 != NULL);
     assert(c2->size > 0);
 
-    // TODO
-    int distance;
-    int biggerSize;
-    if (c1->size < c2->size){
+    float clusterDistance;
+    for (int indexC1 = 0; indexC1 < c1->size; indexC1++){
+        for (int indexC2 = 0; indexC2 < c2->size; indexC2++){
+            if (obj_distance(&(c1->obj[indexC1]),&(c2->obj[indexC2])) > clusterDistance ){
+                clusterDistance = obj_distance(&(c1->obj[indexC1]),&(c2->obj[indexC2]));
+            }
+        }
     }
-    for (int i = 0;i<0;i++);
+    return clusterDistance;
 }
 
 /*
- Funkce najde dva nejblizsi shluky. V poli shluku 'carr' o velikosti 'narr'
+ Funkce najde dva nejblizsi shluky. V poli shluku 'clusterArr' o velikosti 'narr'
  hleda dva nejblizsi shluky. Nalezene shluky identifikuje jejich indexy v poli
- 'carr'. Funkce nalezene shluky (indexy do pole 'carr') uklada do pameti na
+ 'clusterArr'. Funkce nalezene shluky (indexy do pole 'carr') uklada do pameti na
  adresu 'c1' resp. 'c2'.
 */
 void find_neighbours(struct cluster_t *carr, int narr, int *c1, int *c2)
@@ -250,6 +247,16 @@ void find_neighbours(struct cluster_t *carr, int narr, int *c1, int *c2)
     assert(narr > 0);
 
     // TODO
+    float neighbours;
+    for (int i = 0; i < narr;i++){
+        for (int j = 0; j < narr; i++){
+            if (cluster_distance(&(carr[i]),&(carr[j])) < neighbours || i!=j ){
+                neighbours = cluster_distance(&(carr[i]),&(carr[j]));
+                *c1 = i;
+                *c2 = j;
+            }
+        }
+    }
 }
 
 // pomocna funkce pro razeni shluku
@@ -297,8 +304,6 @@ void print_cluster(struct cluster_t *c)
 int load_clusters(char *filename, struct cluster_t **arr)
 {
     assert(arr != NULL);
-
-    // TODO
 
     //Otevreni a kontrola souboru
     FILE *filePtr;
@@ -356,7 +361,7 @@ int main(int argc, char *argv[])
         free(clusters);
 
     }else if (argc == 2){
-        numberOfClusters == 1;
+        numberOfClusters = 1;
     }else{
         fprintf(stderr,"Error, invalid number of arguments.\n");
     }
