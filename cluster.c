@@ -141,11 +141,11 @@ struct cluster_t *resize_cluster(struct cluster_t *c, int new_cap)
  */
 void append_cluster(struct cluster_t *c, struct obj_t obj)
 {
-    if (c->size == c->capacity){ //SIZE = CAP = není místo, reallocuj
+    if (c->size == c->capacity){
         resize_cluster(c,c->size + CLUSTER_CHUNK);
         c->obj[c->size] = obj;
         c->size++;
-    }else{ // SIZE < CAP = je místo, můžeš přidat obj na konec bez realloc
+    }else{
         c->obj[c->size] = obj;
         c->size++;
     }
@@ -190,8 +190,7 @@ int remove_cluster(struct cluster_t *carr, int narr, int idx)
     for (int i = idx;i < narr - 1 ;i++){
         carr[i] = carr[i+1];
     }
-    carr->size-=1;
-    return carr->size;
+    return narr - 1;
 
 }
 
@@ -225,11 +224,15 @@ float cluster_distance(struct cluster_t *c1, struct cluster_t *c2)
     assert(c2 != NULL);
     assert(c2->size > 0);
 
-    float clusterDistance;
+    float clusterDistance = obj_distance(&(c1->obj[0]),&(c2->obj[0]));
+    float newDistance;
     for (int indexC1 = 0; indexC1 < c1->size; indexC1++){
         for (int indexC2 = 0; indexC2 < c2->size; indexC2++){
-            if (obj_distance(&(c1->obj[indexC1]),&(c2->obj[indexC2])) > clusterDistance ){
-                clusterDistance = obj_distance(&(c1->obj[indexC1]),&(c2->obj[indexC2]));
+
+            newDistance = obj_distance(&(c1->obj[indexC1]),&(c2->obj[indexC2]));
+
+            if ( newDistance < clusterDistance ){
+                clusterDistance = newDistance;
             }
         }
     }
@@ -246,17 +249,19 @@ void find_neighbours(struct cluster_t *carr, int narr, int *c1, int *c2)
 {
     assert(narr > 0);
 
-    // TODO
-    float neighbours;
-    for (int i = 0; i < narr;i++){
-        for (int j = 0; j < narr; i++){
-            if (cluster_distance(&(carr[i]),&(carr[j])) < neighbours || i!=j ){
-                neighbours = cluster_distance(&(carr[i]),&(carr[j]));
-                *c1 = i;
-                *c2 = j;
-            }
-        }
-    }
+	float neighbourDistance = cluster_distance(&(carr[0]), &(carr[1]));
+    float newDistance;
+    for(int i = 0; i < narr - 1; i++){
+		for(int j = i + 1; j < narr; j++){
+			newDistance = cluster_distance(carr + i, carr + j);
+			if (newDistance <= neighbourDistance)
+			{
+				neighbourDistance = newDistance;
+				*c1 = i;
+				*c2 = j;
+			}
+		}
+	}
 }
 
 // pomocna funkce pro razeni shluku
@@ -349,20 +354,34 @@ void print_clusters(struct cluster_t *carr, int narr)
 int main(int argc, char *argv[])
 {
     struct cluster_t *clusters;
+    
     int numberOfClusters;
 
+    //Nastavení numberOfClusters podle argumentu
     if (argc == 3){
         numberOfClusters = atoi(argv[2]);
-        print_clusters(clusters,load_clusters(argv[1],&clusters));
-        for (int i = 0;i<20;i++){
-            clear_cluster(&clusters[i]);
-        }
-        printf("%d", numberOfClusters);
-        free(clusters);
-
     }else if (argc == 2){
         numberOfClusters = 1;
     }else{
         fprintf(stderr,"Error, invalid number of arguments.\n");
     }
+
+    int c1;
+    int c2;
+    int clustersLoaded = load_clusters(argv[1],&clusters);
+    while (clustersLoaded!=numberOfClusters) {
+
+        find_neighbours(clusters, clustersLoaded, &c1, &c2);
+
+        merge_clusters(&clusters[c1],&clusters[c2]);
+
+        clustersLoaded = remove_cluster(clusters, clustersLoaded, c2);
+	}
+
+    print_clusters(clusters,clustersLoaded);
+    for (int i=0; i<clustersLoaded; i++) {
+        clear_cluster(&clusters[i]);
+    }
+    free(clusters);
+	return 0;
 }

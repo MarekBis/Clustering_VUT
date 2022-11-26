@@ -1,7 +1,7 @@
-CFLAGS= -std=c99 -Wall -Wextra -Werror
+CFLAGS= -std=c99 -Wall -Wextra -Werror -g
 
 cluster: cluster.c
-	gcc $(CFLAGS) cluster.c -o cluster
+	gcc $(CFLAGS) cluster.c -o cluster -lm
 testing: testing.c
 	gcc $(CFLAGS) testing.c -o testing
 test2: test2.c
