@@ -143,12 +143,9 @@ void append_cluster(struct cluster_t *c, struct obj_t obj)
 {
     if (c->size == c->capacity){
         resize_cluster(c,c->size + CLUSTER_CHUNK);
-        c->obj[c->size] = obj;
-        c->size++;
-    }else{
-        c->obj[c->size] = obj;
-        c->size++;
     }
+    c->obj[c->size] = obj;
+    c->size++;
 }
 
 /*
