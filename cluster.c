@@ -85,12 +85,13 @@ void init_cluster(struct cluster_t *c, int cap)
     assert(cap >= 0);
 
     c->obj = malloc(sizeof(struct obj_t)*cap);
-    if (c->obj == NULL){
-        fprintf(stderr,"Malloc c->obj error.\n");
-    }else{
+
+    if (c->obj != NULL){
         c->capacity = cap;
+        c->size = 0;
+    }else{
+        fprintf(stderr,"Malloc c->obj error.\n");
     }
-    c->size = 0;
 }
 
 /*
@@ -98,14 +99,11 @@ void init_cluster(struct cluster_t *c, int cap)
  */
 void clear_cluster(struct cluster_t *c)
 {
-    if (c->obj == NULL){
-        return;
-    }else{
-        free(c->obj);
-        c->obj = NULL;
-        c->size = 0;
-        c->capacity = 0;
-    }
+    free(c->obj);
+
+    c->obj = NULL;
+    c->size = 0;
+    c->capacity = 0;
 }
 
 /// Chunk of cluster objects. Value recommended for reallocation.
@@ -141,9 +139,11 @@ struct cluster_t *resize_cluster(struct cluster_t *c, int new_cap)
  */
 void append_cluster(struct cluster_t *c, struct obj_t obj)
 {
+    //Pokud v clusteru již není místo, zvětšíme capacitu o CLUSTER_CHUNK
     if (c->size == c->capacity){
         resize_cluster(c,c->size + CLUSTER_CHUNK);
     }
+    //Prirazeni objektu do shluku
     c->obj[c->size] = obj;
     c->size++;
 }
@@ -162,11 +162,11 @@ void merge_clusters(struct cluster_t *c1, struct cluster_t *c2)
 {
     assert(c1 != NULL);
     assert(c2 != NULL);
-
-    //Pokud kapacita nestaci, zvetsime prostor c1
+    //vyuzitim funkce pridame kazdy objekt z c2 do c1
     for (int i = 0; i<c2->size;i++){
         append_cluster(c1,c2->obj[i]);
     }
+    //Následně seřadíme
     sort_cluster(c1);
 }
 
@@ -182,11 +182,13 @@ int remove_cluster(struct cluster_t *carr, int narr, int idx)
 {
     assert(idx < narr);
     assert(narr > 0);
-
+    //Odstraníme vybraný shluk pomocí idx z pole shluků
     clear_cluster(&carr[idx]);
+    //Následně posuneme všechny prvky které v poli následovali o jedno zpátky
     for (int i = idx;i < narr - 1 ;i++){
         carr[i] = carr[i+1];
     }
+    //Vrátíme novou hodnotu počtu shluků v poli
     return narr - 1;
 
 }
@@ -220,19 +222,22 @@ float cluster_distance(struct cluster_t *c1, struct cluster_t *c2)
     assert(c1->size > 0);
     assert(c2 != NULL);
     assert(c2->size > 0);
-
+    //Nastavíme vzdálenost pro 2 libovolné prvky v poli
     float clusterDistance = obj_distance(&(c1->obj[0]),&(c2->obj[0]));
+    //Inicializujeme proměnnou, do které budeme zapisovat nejmenší vzdálenost
     float newDistance;
+    //Budeme procházet všechny prvky prvního, následně druhého clusteru
     for (int indexC1 = 0; indexC1 < c1->size; indexC1++){
         for (int indexC2 = 0; indexC2 < c2->size; indexC2++){
-
+            //Vypočítáme vzdálenost
             newDistance = obj_distance(&(c1->obj[indexC1]),&(c2->obj[indexC2]));
-
+            //Pokud je nově nalezená vzdálenost menší než předešlá, přepíšeme ji
             if ( newDistance < clusterDistance ){
                 clusterDistance = newDistance;
             }
         }
     }
+    //Vracíme nejmenší vzdálenost
     return clusterDistance;
 }
 
@@ -245,15 +250,21 @@ float cluster_distance(struct cluster_t *c1, struct cluster_t *c2)
 void find_neighbours(struct cluster_t *carr, int narr, int *c1, int *c2)
 {
     assert(narr > 0);
-
+    //Znovu jako u cluster_distance nastavíme vzdálenost mezi libovolné prvky
 	float neighbourDistance = cluster_distance(&(carr[0]), &(carr[1]));
     float newDistance;
+    //Procházíme všechny prvky v i arrayi
     for(int i = 0; i < narr - 1; i++){
+        //Projdeme všechny prvky, které ještě nebyly porovnány
 		for(int j = i + 1; j < narr; j++){
-			newDistance = cluster_distance(carr + i, carr + j);
+            //Výpočet
+			newDistance = cluster_distance(&(carr[i]),&(carr[j]));
+            //Pokud je nově nalezená vzdálenost menší než předešlá, nebo se rovná, přepíšeme ji 
 			if (newDistance <= neighbourDistance)
 			{
+                //Přepíšeme proměnnou
 				neighbourDistance = newDistance;
+                //Vrátíme indexy "i" a "j" jako c1,c2
 				*c1 = i;
 				*c2 = j;
 			}
@@ -310,24 +321,95 @@ int load_clusters(char *filename, struct cluster_t **arr)
     //Otevreni a kontrola souboru
     FILE *filePtr;
     filePtr = fopen(filename,"r");
+    //Zjistíme, jestli se soubor správně otevřel, pokud ne, vypíšeme error.
     if (filePtr == NULL){
-        fprintf(stderr,"Error while trying to open a file.\n");
-        return 0;
+        fprintf(stderr,"Error: nepodarilo se otevrit soubor.\n");
+        *arr=NULL;
+        return -1;
     }
+    //Vytvoříme strukturu obj_t a potřebné proměnné
     struct obj_t object;
-    char countText[7];
-    int countNumber;
+    char countText[7]; //První řádek, potřebné k uložení "count="
+    int countNumber; //Počet objektů v souboru
+    int loadedObjects = 0;
 
-    //nacteni prvniho radku kvuli "countNumber"
-    fscanf(filePtr,"%6s%d", countText,&countNumber);
-
-    //alokace místa pro všechny objekty
+    //nacteni prvniho radku kvuli "countNumber",
+    //Zjisteni jestli se hlavicka spravne nacetla ( fscanf == 2 )
+    if (fscanf(filePtr,"%6s%d", countText,&countNumber) !=2){
+        fprintf(stderr,"Error: spatny format hlavicky souboru.\n");
+        *arr=NULL;
+        fclose(filePtr);
+        return -1;
+    };
+    //Počet objektů se nemůže rovnat nebo být menší jak 0
+    if (countNumber <= 0){
+        fprintf(stderr,"Error: pocet objektu nemuze byt mensi/rovno 0");
+        *arr=NULL;
+        return -1;
+    }
+    //Vytvoreni seznamu ID's pro pozdejsi kontrolu unikatnosti
+        char uniqueIds[countNumber];
+    //alokace místa pro všechny objekty v souboru
     *arr = malloc(sizeof(struct cluster_t) * countNumber);
 
+    /*Prace s objekty*/
+
     for (int i = 0; i<countNumber;i++){
-        fscanf(filePtr,"%d %f %f",&object.id,&object.x,&object.y);
+        //načtene ID a souřadnice ze souboru, pokud se některé z čísel nenačte, vyhodnotíme ERROR
+        if (fscanf(filePtr,"%d %f %f",&object.id,&object.x,&object.y) != 3){
+            fprintf(stderr,"Error: Spatny format objektu v souboru.\n");
+            for (int i=0; i<loadedObjects; i++) {
+                clear_cluster(&(*arr)[i]);
+            }
+            free(*arr);
+            *arr=NULL;
+            fclose(filePtr);
+            return -1;
+        }else{
+            loadedObjects++;
+        }
+        //pokud má souřadnice více jak 1000, nebo méně než 0, error
+        if (object.x > 1000 || object.x < 0 || object.y > 1000 || object.y < 0){
+            fprintf(stderr,"Error: Souradnice nejsou ve spravnem rozsahu\n");
+            for (int i=0; i<loadedObjects-1; i++) {
+                clear_cluster(&(*arr)[i]);
+            }
+            fclose(filePtr);
+            free(*arr);
+            *arr=NULL;
+            return -1;
+        }
+        //přiřazení ID do seznamu
+        int uniqueID =object.id;
+        uniqueIds[i] = uniqueID;
+        //inicializace a přidání daného objektu do carr
         init_cluster(&(*arr)[i],1);
         append_cluster(&(*arr)[i],object);
+    }
+    //zkontrolujeme jestli seznam ID's neobsahuje identické ID
+    for (int i = 0;i<countNumber -1;i++){
+        for (int j = i+1; j < countNumber; j++){
+            if (uniqueIds[i] == uniqueIds[j]){
+                fprintf(stderr,"Error: Objekty maji stejne ID\n");
+                for (int i=0; i<countNumber; i++) {
+                    clear_cluster(&(*arr)[i]);
+                }
+                fclose(filePtr);
+                free(*arr);
+                *arr=NULL;
+                return -1;
+            }
+        }
+    }
+    if (loadedObjects != countNumber){
+        fprintf(stderr,"Error: Nenacetly se vsechny objekty\n");
+        for (int i=0; i<countNumber; i++) {
+            clear_cluster(&(*arr)[i]);
+        }
+        fclose(filePtr);
+        free(*arr);
+        *arr=NULL;
+        return -1;
     }
     fclose(filePtr);
     return countNumber;
@@ -351,21 +433,29 @@ void print_clusters(struct cluster_t *carr, int narr)
 int main(int argc, char *argv[])
 {
     struct cluster_t *clusters;
-    
     int numberOfClusters;
 
-    //Nastavení numberOfClusters podle argumentu
+    //Přiřazení čísla numberOfClusters podle argumentu
     if (argc == 3){
         numberOfClusters = atoi(argv[2]);
+    //pokud se agrument nenachází nastavujeme počet clusterů na 1
     }else if (argc == 2){
         numberOfClusters = 1;
     }else{
-        fprintf(stderr,"Error, invalid number of arguments.\n");
+        fprintf(stderr,"Error: nespravny pocet argumentu.\n");
+        return -1;
     }
-
-    int c1;
-    int c2;
+    //inicializace indexů (podle šablony c1,c2)
+    int c1,c2 = 0;
     int clustersLoaded = load_clusters(argv[1],&clusters);
+    //pokud je error v načítání clusterů, program se ukončí
+    if (clustersLoaded == -1){
+        fprintf(stderr,"Error: nepodarilo se nacist clustery.\n");
+        return -1;
+    }
+    
+    /***Algoritmus,print a následné uvolnění clusterů***/
+
     while (clustersLoaded!=numberOfClusters) {
 
         find_neighbours(clusters, clustersLoaded, &c1, &c2);
